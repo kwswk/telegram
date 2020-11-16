@@ -9,7 +9,7 @@ def telegram_bot_sendtext(bot_message):
     response = requests.get(send_text)
 
     return response.json()
-0
 
-test = telegram_bot_sendtext("Testing Telegram bot")
+
+test = telegram_bot_sendtext("hallo kWs")
 print(test)
