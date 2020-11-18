@@ -1,5 +1,6 @@
 from uuid import uuid4
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from bbi_info import get_bbi_info
 
 
 def start(update, context):
@@ -43,6 +44,14 @@ def unknown(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
 
 
+def bbi(update, context):
+    route = context.args[0]
+    direction = context.args[1]
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=get_bbi_info(route, direction)
+                             )
+
+
 if __name__ == '__main__':
 
     updater = Updater('1460342157:AAH26oIP5bwvL6SMgx3lE4BsiQLnAiidGQ8', use_context=True)
@@ -53,6 +62,7 @@ if __name__ == '__main__':
     dp.add_handler(CommandHandler('put', put))
     dp.add_handler(CommandHandler('get', get))
     dp.add_handler(CommandHandler('caps', caps))
+    dp.add_handler(CommandHandler('bbi', bbi))
     dp.add_handler(MessageHandler(Filters.text & (~Filters.command), echo))
     """Unknown handler"""
     dp.add_handler(MessageHandler(Filters.command, unknown))
