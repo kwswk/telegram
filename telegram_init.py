@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from dateutil.relativedelta import relativedelta
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, callbackcontext
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -8,7 +8,6 @@ from py_func.bbi_info import get_bbi_info
 from py_func.layout_config import build_menu
 
 updater = Updater('1460342157:AAH26oIP5bwvL6SMgx3lE4BsiQLnAiidGQ8', use_context=True)
-timer = updater.job_queue
 
 bbi_res_lst = dict()
 
@@ -16,7 +15,7 @@ bbi_res_lst = dict()
 def start(update, context):
     """/start"""
     context.bot.send_message(chat_id=update.effective_chat.id, text='Hi BB, this is our AI reminder')
-    updater.job_queue.run_repeating(date_counter, interval=86400, context=update.effective_chat.id)
+    updater.job_queue.run_repeating(date_counter, context=update.effective_chat.id, interval=86400,  first=0.1)
 
 
 def unknown(update, context):
@@ -34,7 +33,10 @@ def date_counter(context: callbackcontext):
     meet_date = datetime(2019, 5, 23)
     first_date = datetime(2019, 6, 9)
 
-    context.bot.send_message(chat_id=context.job.context, text=f'❤❤❤❤❤ Daily Summary {datetime.now()} ❤❤❤❤❤')
+    context.bot.send_message(
+        chat_id=context.job.context,
+        text=f'❤❤❤❤❤ Daily Summary {datetime.now().strftime("%Y-%m-%d")} ❤❤❤❤❤'
+    )
     context.bot.send_message(
         chat_id=context.job.context,
         text=f'Happy {(today-anniversary).days} Days!'
