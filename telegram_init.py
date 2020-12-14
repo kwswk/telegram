@@ -1,6 +1,6 @@
 from datetime import datetime, time
 from dateutil.relativedelta import relativedelta
-import logging
+# import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, \
     CallbackQueryHandler, callbackcontext, ConversationHandler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -10,11 +10,11 @@ from py_func.bbi_info import get_bbi_info
 from py_func.layout_config import build_menu
 
 # Enable logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO)
-
-logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#     level=logging.INFO)
+#
+# logger = logging.getLogger(__name__)
 
 # Bot Credential
 updater = Updater('1460342157:AAH26oIP5bwvL6SMgx3lE4BsiQLnAiidGQ8', use_context=True)
