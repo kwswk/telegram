@@ -4,8 +4,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, \
 
 from py_func import greet, unknown, conv_end
 from py_func.bbi_info import bbi_start, bbi_callback_handler, ROUTE, DEST, SEC_ROUTE
-
-from py_func.reminder import date_counter
+from py_func.counter import date_counter
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -18,16 +17,8 @@ updater = Updater('1460342157:AAH26oIP5bwvL6SMgx3lE4BsiQLnAiidGQ8', use_context=
 
 
 if __name__ == '__main__':
-    """add functions to dispatcher"""
-    dp = updater.dispatcher
 
-    """Greeting"""
-    dp.add_handler(CommandHandler('hi', greet))
-
-    """Date Counter"""
-    dp.add_handler(CommandHandler('counter', date_counter))
-
-    """BBI flow"""
+    # Define /bbi handler workflow
     bbi_handler = ConversationHandler(
         entry_points=[CommandHandler('bbi', bbi_start)],
         states={
@@ -37,11 +28,16 @@ if __name__ == '__main__':
         },
         fallbacks=[CommandHandler('end', conv_end)]
     )
+
+    dp = updater.dispatcher
+    # /hi
+    dp.add_handler(CommandHandler('hi', greet))
+    # /counter
+    dp.add_handler(CommandHandler('counter', date_counter))
+    # /bbi
     dp.add_handler(bbi_handler)
-
-    # dp.add_handler(CommandHandler('dating', date_counter, pass_job_queue=True))
-
-    """Unknown handler"""
+    # error handler
     dp.add_handler(MessageHandler(Filters.command, unknown))
+    # dp.add_handler(CommandHandler('dating', date_counter, pass_job_queue=True))
 
     updater.start_polling()
