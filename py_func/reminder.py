@@ -3,8 +3,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
-# Periodic reminder
 def date_counter(update, context):
+    """Periodic reminder"""
     today = datetime.now()
     anniversary = datetime(2019, 9, 6)
     meet_date = datetime(2019, 5, 23)
@@ -24,3 +24,9 @@ def date_counter(update, context):
              f'{relativedelta(today, anniversary).years * 12 + relativedelta(today, anniversary).months} '
              f'months since anniversary '
     )
+
+
+# def counter(update, context):
+#     """/start"""
+#     context.bot.send_message(chat_id=update.effective_chat.id, text='Hi BB, this is our AI reminder')
+#     # updater.job_queue.run_repeating(date_counter, context=update.effective_chat.id, interval=86400,  first=0.1)

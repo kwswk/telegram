@@ -2,7 +2,7 @@ from telegram.ext import ConversationHandler
 
 
 def greet(update, context):
-    """/hi"""
+    """/hi command to pop up menu"""
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text='Hi BB, this is our bot!! Press command to start\n\n '
@@ -12,10 +12,12 @@ def greet(update, context):
 
 
 def unknown(update, context):
+    """Error handling"""
     context.bot.send_message(chat_id=update.effective_chat.id, text='Unknown Command')
 
 
 def conv_end(update, context):
+    """/end command handler"""
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f'See you! Input /hi to call me again :D'
