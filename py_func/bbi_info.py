@@ -26,7 +26,7 @@ def get_bbi_info(route: object) -> dict:
 def bbi_start(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f'Enter the 1st Route'
+        text=f'Enter the 1st Route',
     )
     return ROUTE
 
@@ -47,12 +47,12 @@ def bbi_callback_handler(update, context):
 
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f'You have chosen Route {route}'
+            text=f'You have chosen Route {route}',
         )
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=f'/bbi-sel Select Direction',
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
         )
         bbi_res_lst['route'] = route
         bbi_res_lst['detail'] = bbi_dict
@@ -63,7 +63,7 @@ def bbi_callback_handler(update, context):
         destination = update.callback_query.data
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f'/bbi-dest {destination}'
+            text=f'/bbi-dest {destination}',
         )
 
         bbi_dict = bbi_res_lst['detail'][destination]
@@ -78,12 +78,12 @@ def bbi_callback_handler(update, context):
         reply_markup = InlineKeyboardMarkup(build_menu(lst_button, n_cols=5))
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f'You Can Change the following routes'
+            text=f'You Can Change the following routes',
         )
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=f'/bbi-xchg List of 2nd routes',
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
         )
 
         return SEC_ROUTE
@@ -96,10 +96,11 @@ def bbi_callback_handler(update, context):
         change_dest = [i['xchange'] for i in bbi_dict if i['sec_routeno'] == route_chosen][0]
         fare_detail = [i['discount_max'] for i in bbi_dict if i['sec_routeno'] == route_chosen][0]
 
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text=f'++++++++++++++++++++++++++++++\n'
-                                      f'Change {route_chosen} to {change_dir}\n\n'
-                                      f'Change stop : {change_dest}\n\n'
-                                      f'Fare discount : {fare_detail}\n\n'
-                                      'press /end to end this inquiry',
-                                 )
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f'++++++++++++++++++++++++++++++\n'
+                 f'Change {route_chosen} to {change_dir}\n\n'
+                 f'Change stop : {change_dest}\n\n'
+                 f'Fare discount : {fare_detail}\n\n'
+                 'press /end to end this inquiry',
+         )
