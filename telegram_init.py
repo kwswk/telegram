@@ -1,4 +1,4 @@
-import logging
+import argparse
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, \
     CallbackQueryHandler, ConversationHandler
 
@@ -6,15 +6,13 @@ from py_func import greet, unknown, conv_end
 from py_func.bbi_info import bbi_start, bbi_callback_handler, ROUTE, DEST, SEC_ROUTE
 from py_func.counter import date_counter
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO)
-
-logger = logging.getLogger(__name__)
+# get environment vars
+parser = argparse.ArgumentParser()
+parser.add_argument("--botkey", help='Key from bot father')
+args = parser.parse_args()
 
 # Bot Credential
-updater = Updater('1460342157:AAH26oIP5bwvL6SMgx3lE4BsiQLnAiidGQ8', use_context=True)
-
+updater = Updater(args.botkey, use_context=True)
 
 if __name__ == '__main__':
 
