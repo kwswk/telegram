@@ -6,32 +6,32 @@ from boto3.dynamodb.conditions import Key, Attr
 dynamodb = boto3.resource('dynamodb')
 
 
-def insert_item():
-    table = dynamodb.Table('account')
-    table.put_item(
-        Item={
-            'card_no': '4255360025489789',
-            'bank': 'MOX',
-            'asso': 'VISA',
-            'card_type': 'ATM',
-            'cycle_date': 5,
-            'expiry_date': '2023-12-01',
-            'limit': '999999',
-            'nature': 'debit',
-        }
-    )
+def insert_item(db_table: str, item: dict):
+    table = dynamodb.Table(db_table)
+    table.put_item(Item=item)
 
 
-def fetch_item_by_key():
-    table = dynamodb.Table('account')
-    response = table.get_item(
-        Key={
-            'bank': 'BOCHK',
-            'card_no': '5500123455551111',
-        }
+def fetch_item_by_key(db_table: str, item: dict):
+
+    lst_result = list()
+    table = dynamodb.Table(db_table)
+
+    for k, v in item.items():
+        response = table.query(KeyConditionExpression=Key(k).eq(v))
+        lst_result.append(response['Items'])
+
+    return lst_result
+
+
+fetch_item_by_key(db_table='important_dates', item={'user': 'erikws'})
+
+
+def scan(db_table: str, item: dict):
+    table = dynamodb.Table(db_table)
+    response = table.scan(
+        FilterExpression=Attr('min_spend_all').gt(10)  # var.nest.eq('A') < support nested json
     )
-    item = response['Item']
-    print(item)
+    items = response['Items']
 
 
 def create_table():
@@ -115,15 +115,6 @@ def query():
     table = dynamodb.Table('campaign')
     response = table.query(
         KeyConditionExpression=Key('bank').eq('BOCHK') & Key('start_date').gt('2020-10-01')
-    )
-    items = response['Items']
-    print(items)
-
-
-def scan():
-    table = dynamodb.Table('campaign')
-    response = table.scan(
-        FilterExpression=Attr('min_spend_all').gt(10)  # var.nest.eq('A') < support nested json
     )
     items = response['Items']
     print(items)
