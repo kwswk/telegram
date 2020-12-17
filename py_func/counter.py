@@ -12,7 +12,7 @@ item_date = dict()
 
 def add_dates_handler(update, context):
     if re.match('(?i)add', update.message.text):
-        item_date['user'] = update.message.chat.username
+        item_date['user'] = update.message.from_user.username
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text='Tell me the date in YYYY-MM-DD format'
@@ -44,13 +44,12 @@ def date_counter(update, context):
     today = datetime.now()
     return_text = 'Cheers !\n'
 
-    dates = fetch_item_by_key(db_table='important_dates', item={'user': update.message.chat.username})
+    dates = fetch_item_by_key(db_table='important_dates', item={'user': update.message.from_user.username})
     for i in dates[0]:
         date_desc = i['desc']
         date = datetime.strptime(i['date'], '%Y-%m-%d')
         months = relativedelta(today, date).years * 12 + relativedelta(today, date).months
         return_text += f'{months} months since {date_desc} \n'
-    print(dates)
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
