@@ -25,7 +25,8 @@ def add_dates_handler(update, context):
             ADD_DONE : step 3
     """
     if re.match('(?i)add', update.message.text):
-        item_date['user'] = update.message.from_user.username
+        user = 'erikws' if update.message.from_user.username == 'sleepyforever' else update.message.from_user.username
+        item_date['user'] = user
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text='Tell me the date in YYYY-MM-DD format'
