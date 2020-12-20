@@ -35,6 +35,12 @@ def fetch_item_by_key(db_table: str, item: dict):
 
 
 def delete_item(db_table: str, item: dict):
+    """
+    Remove item by key in dynamodb table
+    :param db_table: Target table
+    :param item: dict of keys to be removed (user + date)
+    :return: None
+    """
     table = dynamodb.Table(db_table)
     table.delete_item(Key=item)
 

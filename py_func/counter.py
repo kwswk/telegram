@@ -110,9 +110,14 @@ def date_counter(update, context):
             SHOW_DATE : step 0
     """
     today = datetime.now()
-    return_text = 'Cheers !\n'
+    return_text = 'Cheers !\n\n'
     dates.clear()
-    dates.append(fetch_item_by_key(db_table='important_dates', item={'user': update.message.from_user.username})[0])
+    user = 'erikws' if update.message.from_user.username == 'sleepyforever' else update.message.from_user.username
+
+    dates.append(fetch_item_by_key(
+        db_table='important_dates',
+        item={'user': user}
+    )[0])
 
     for i in dates[0]:
         date_desc = i['desc']
