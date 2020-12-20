@@ -6,32 +6,45 @@ from boto3.dynamodb.conditions import Key, Attr
 dynamodb = boto3.resource('dynamodb')
 
 
-def insert_item():
-    table = dynamodb.Table('account')
-    table.put_item(
-        Item={
-            'card_no': '4255360025489789',
-            'bank': 'MOX',
-            'asso': 'VISA',
-            'card_type': 'ATM',
-            'cycle_date': 5,
-            'expiry_date': '2023-12-01',
-            'limit': '999999',
-            'nature': 'debit',
-        }
-    )
+def insert_item(db_table: str, item: dict):
+    """
+    Insert items to dynamodb db table
+    :param db_table: NOSQL table to be appended
+    :param item: data row in dict format
+    :return: no return
+    """
+    table = dynamodb.Table(db_table)
+    table.put_item(Item=item)
 
 
-def fetch_item_by_key():
-    table = dynamodb.Table('account')
-    response = table.get_item(
-        Key={
-            'bank': 'BOCHK',
-            'card_no': '5500123455551111',
-        }
+def fetch_item_by_key(db_table: str, item: dict):
+    """
+    Extract data from dynamodb table
+    :param db_table: NOSQL table to be appended
+    :param item: key and eqv value to be extracted
+    :return: list of related row in dict format
+    """
+    lst_result = list()
+    table = dynamodb.Table(db_table)
+
+    for k, v in item.items():
+        response = table.query(KeyConditionExpression=Key(k).eq(v))
+        lst_result.append(response['Items'])
+
+    return lst_result
+
+
+def delete_item(db_table: str, item: dict):
+    table = dynamodb.Table(db_table)
+    table.delete_item(Key=item)
+
+
+def scan(db_table: str, item: dict):
+    table = dynamodb.Table(db_table)
+    response = table.scan(
+        FilterExpression=Attr('min_spend_all').gt(10)  # var.nest.eq('A') < support nested json
     )
-    item = response['Item']
-    print(item)
+    items = response['Items']
 
 
 def create_table():
@@ -66,16 +79,6 @@ def create_table():
 
     # Wait until the table exists.
     # table.meta.client.get_waiter('table_exists').wait(TableName='users')
-
-
-def delete_item():
-    table = dynamodb.Table('account')
-    table.delete_item(
-        Key={
-            'bank': 'BOCHK',
-            'card_no': '5500123455551111',
-        }
-    )
 
 
 def batch_insert_items():
@@ -115,15 +118,6 @@ def query():
     table = dynamodb.Table('campaign')
     response = table.query(
         KeyConditionExpression=Key('bank').eq('BOCHK') & Key('start_date').gt('2020-10-01')
-    )
-    items = response['Items']
-    print(items)
-
-
-def scan():
-    table = dynamodb.Table('campaign')
-    response = table.scan(
-        FilterExpression=Attr('min_spend_all').gt(10)  # var.nest.eq('A') < support nested json
     )
     items = response['Items']
     print(items)

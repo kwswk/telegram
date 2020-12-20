@@ -11,6 +11,11 @@ bbi_res_lst = dict()
 
 
 def get_bbi_info(route: object) -> dict:
+    """
+    Calling KMB API and get BBI information
+    :param route: 1st route
+    :return: dictionary containing all interchange info
+    """
     direction = ['F', 'B']
     bbi_info = list()
     for i in direction:
@@ -24,6 +29,12 @@ def get_bbi_info(route: object) -> dict:
 
 
 def bbi_start(update, context):
+    """
+    Trigger bbi module by calling /bbi
+    :param update: from bot API
+    :param context: from bot API
+    :return: ROUTE is step 0 in /bbi
+    """
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f'Enter the 1st Route',
@@ -32,8 +43,14 @@ def bbi_start(update, context):
 
 
 def bbi_callback_handler(update, context):
-    """handle BBI callback"""
-
+    """
+    Handle /bbi callback
+    :param update: from bot API
+    :param context: from bot API
+    :return:
+            DEST - step 1
+            SEC_ROUTE - step 2
+    """
     if update.callback_query is None:
         route = update.message.text
         bbi_dict = get_bbi_info(route)
