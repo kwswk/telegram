@@ -7,12 +7,23 @@ dynamodb = boto3.resource('dynamodb')
 
 
 def insert_item(db_table: str, item: dict):
+    """
+    Insert items to dynamodb db table
+    :param db_table: NOSQL table to be appended
+    :param item: data row in dict format
+    :return: no return
+    """
     table = dynamodb.Table(db_table)
     table.put_item(Item=item)
 
 
 def fetch_item_by_key(db_table: str, item: dict):
-
+    """
+    Extract data from dynamodb table
+    :param db_table: NOSQL table to be appended
+    :param item: key and eqv value to be extracted
+    :return: list of related row in dict format
+    """
     lst_result = list()
     table = dynamodb.Table(db_table)
 
@@ -23,7 +34,9 @@ def fetch_item_by_key(db_table: str, item: dict):
     return lst_result
 
 
-fetch_item_by_key(db_table='important_dates', item={'user': 'erikws'})
+def delete_item(db_table: str, item: dict):
+    table = dynamodb.Table(db_table)
+    table.delete_item(Key=item)
 
 
 def scan(db_table: str, item: dict):
@@ -66,16 +79,6 @@ def create_table():
 
     # Wait until the table exists.
     # table.meta.client.get_waiter('table_exists').wait(TableName='users')
-
-
-def delete_item():
-    table = dynamodb.Table('account')
-    table.delete_item(
-        Key={
-            'bank': 'BOCHK',
-            'card_no': '5500123455551111',
-        }
-    )
 
 
 def batch_insert_items():

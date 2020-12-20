@@ -3,8 +3,13 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, \
     CallbackQueryHandler, ConversationHandler
 
 from py_func import greet, unknown, conv_end
-from py_func.bbi_info import bbi_start, bbi_callback_handler, ROUTE, DEST, SEC_ROUTE
-from py_func.counter import date_counter, add_dates_handler, SHOW_DATE, ADD_DATE, ADD_DESC, ADD_DONE, REMOVE_DATE
+from py_func.bbi_info import \
+    bbi_start, bbi_callback_handler, \
+    ROUTE, DEST, SEC_ROUTE
+from py_func.counter import \
+    date_counter, add_dates_handler, remove_dates_handler, \
+    SHOW_DATE, ADD_DATE, ADD_DESC, \
+    REMOVE_DATE, REMOVE_SEL
 
 # get environment vars
 parser = argparse.ArgumentParser()
@@ -30,9 +35,13 @@ if __name__ == '__main__':
     counter_handler = ConversationHandler(
         entry_points=[CommandHandler('counter', date_counter)],
         states={
-            SHOW_DATE: [MessageHandler(Filters.regex('(?i)add'), add_dates_handler)],
-            ADD_DATE: [MessageHandler(Filters.regex('^\d{4}\-\d{1,2}\-\d{1,2}$'),add_dates_handler)],
+            SHOW_DATE: [MessageHandler(Filters.regex('(?i)add'), add_dates_handler),
+                        MessageHandler(Filters.regex('(?i)remove'), remove_dates_handler)
+                        ],
+            ADD_DATE: [MessageHandler(Filters.regex('^\d{4}\-\d{1,2}\-\d{1,2}$'), add_dates_handler)],
             ADD_DESC: [MessageHandler(Filters.regex('\w+'), add_dates_handler)],
+            REMOVE_DATE: [CallbackQueryHandler(remove_dates_handler)],
+            REMOVE_SEL: [CallbackQueryHandler(remove_dates_handler)],
         },
         fallbacks=[CommandHandler('end', conv_end)],
     )
