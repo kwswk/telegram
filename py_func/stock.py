@@ -3,7 +3,7 @@ import requests
 
 def quote_price(market, code):
     """
-    calling Alpha Vantage API
+    calling Yahoo API (100 requests per day)
     :param market: US or HK
     :param code: Stock Code
     :return: Dict of price
@@ -12,14 +12,16 @@ def quote_price(market, code):
     if market != 'US':
         code = f'{code.zfill(4)}.{market}'
 
-    url = "https://alpha-vantage.p.rapidapi.com/query"
-    querystring = {"function": "GLOBAL_QUOTE", "symbol": code}
+    url = "https://yahoo-finance-low-latency.p.rapidapi.com/v6/finance/quote"
+
+    querystring = {"symbols": code}
 
     headers = {
         'x-rapidapi-key': "5c2f24892fmsh58278fdf1cebf0fp1bb586jsndda6a2eceff8",
-        'x-rapidapi-host': "alpha-vantage.p.rapidapi.com"
+        'x-rapidapi-host': "yahoo-finance-low-latency.p.rapidapi.com"
     }
 
     response = requests.request("GET", url, headers=headers, params=querystring)
 
+    print(response.text)
     return response.text
