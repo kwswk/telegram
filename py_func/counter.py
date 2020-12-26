@@ -139,8 +139,3 @@ def date_counter(update, context):
              'reply "remove" to remove date record'
     )
     return SHOW_DATE
-
-# def counter(update, context):
-#     """/start"""
-#     context.bot.send_message(chat_id=update.effective_chat.id, text='Hi BB, this is our AI reminder')
-#     # updater.job_queue.run_repeating(date_counter, context=update.effective_chat.id, interval=86400,  first=0.1)
