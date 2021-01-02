@@ -92,7 +92,7 @@ def remove_dates_handler(update, context):
         del_feedback = ast.literal_eval(update.callback_query.data)
         delete_item(
             'important_dates',
-            item={k: del_feedback[k] for k in ['user','date'] if del_feedback}
+            item={k: del_feedback[k] for k in ['user', 'date'] if del_feedback}
         )
         context.bot.send_message(
             chat_id=update.effective_chat.id,

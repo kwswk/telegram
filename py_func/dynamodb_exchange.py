@@ -45,12 +45,21 @@ def delete_item(db_table: str, item: dict):
     table.delete_item(Key=item)
 
 
-def scan(db_table: str, item: dict):
+def batch_insert_items(db_table: str, items: list, keys: list):
+    table = dynamodb.Table(db_table)
+    with table.batch_writer(overwrite_by_pkeys=keys) as batch:
+        for item in items:
+            batch.put_item(Item=item)
+
+
+def scan_db(db_table: str, key: str, cond: str):
     table = dynamodb.Table(db_table)
     response = table.scan(
-        FilterExpression=Attr('min_spend_all').gt(10)  # var.nest.eq('A') < support nested json
+        FilterExpression=Attr(key).eq(cond)
     )
     items = response['Items']
+
+    return items
 
 
 def create_table():
@@ -85,39 +94,6 @@ def create_table():
 
     # Wait until the table exists.
     # table.meta.client.get_waiter('table_exists').wait(TableName='users')
-
-
-def batch_insert_items():
-    table = dynamodb.Table('campaign')
-    with table.batch_writer(overwrite_by_pkeys=['bank', 'start_date']) as batch:
-        batch.put_item(
-            Item={
-                'bank': 'BOCHK',
-                'start_date': '2020-11-15',
-                'expiry_date': '2020-12-31',
-                'rebate_date': '2020-02-22',
-                'card': 'Taobao',
-                'rebate_type': 'gift point',
-                'rebate_cap': 100,
-                'rebate_ratio': Decimal('0.5'),
-                'min_spend_each': 1000,
-                'min_spend_all': 10000
-            }
-        )
-        batch.put_item(
-            Item={
-                'bank': 'HSBC',
-                'start_date': '2020-12-15',
-                'expiry_date': '2021-12-31',
-                'rebate_date': '2022-02-22',
-                'card': 'VS',
-                'rebate_type': 'gift point',
-                'rebate_cap': 300,
-                'rebate_ratio': Decimal('0.056'),
-                'min_spend_each': 500,
-                'min_spend_all': 8000
-            }
-        )
 
 
 def query():
