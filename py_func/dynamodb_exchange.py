@@ -3,7 +3,7 @@ from decimal import Decimal
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name='ap-east-1')
 
 
 def insert_item(db_table: str, item: dict):
@@ -62,6 +62,17 @@ def scan_db(db_table: str, key: str, cond: str):
     return items
 
 
+def update_table(db_table: str, keys: dict, items=None):
+    table = dynamodb.Table(db_table)
+    table.update_item(
+        Key=keys,
+        UpdateExpression='SET load_date = :val1',
+        ExpressionAttributeValues={
+            ':val1': '2021-01-02'
+        }
+    )
+
+
 def create_table():
     # Create the DynamoDB table. # Key == # in Definition
     table = dynamodb.create_table(
@@ -110,16 +121,5 @@ def delete_table():
     table.delete()
 
 
-def update():
-    table = dynamodb.Table('campaign')
-    table.update_item(
-        Key={
-            'bank': 'HSBC',
-            'start_date': '2020-12-15',
-        },
-        UpdateExpression='SET progress = :val1',
-        ExpressionAttributeValues={
-            ':val1': 100
-        }
-    )
+
 

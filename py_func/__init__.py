@@ -8,6 +8,7 @@ def greet(update, context):
         text='Hi BB, this is our bot!! Press command to start\n\n '
              '/counter Trigger time machine\n\n '
              '/bbi Check Bus Interchange info\n\n'
+             '/stock Track stock holdings\n\n'
     )
 
 

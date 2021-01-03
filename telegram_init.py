@@ -10,6 +10,13 @@ from py_func.counter import \
     date_counter, add_dates_handler, remove_dates_handler, \
     SHOW_DATE, ADD_DATE, ADD_DESC, \
     REMOVE_DATE, REMOVE_SEL
+from py_func.stock import \
+    stock_start, add_dir, add_market, \
+    add_stock_code, add_stock_price, \
+    add_stock_lot, add_stock_broker, add_done, \
+    SHOW_SMY, ADD_DIR, ADD_MKT, \
+    ADD_CODE, ADD_PRICE, ADD_LOT, \
+    ADD_BRK
 
 # get environment vars
 parser = argparse.ArgumentParser()
@@ -20,7 +27,6 @@ args = parser.parse_args()
 updater = Updater(args.botkey, use_context=True)
 
 if __name__ == '__main__':
-
     # Define /bbi handler workflow
     bbi_handler = ConversationHandler(
         entry_points=[CommandHandler('bbi', bbi_start)],
@@ -31,6 +37,7 @@ if __name__ == '__main__':
         },
         fallbacks=[CommandHandler('end', conv_end)],
     )
+
     # Define /counter handler workflow
     counter_handler = ConversationHandler(
         entry_points=[CommandHandler('counter', date_counter)],
@@ -46,6 +53,22 @@ if __name__ == '__main__':
         fallbacks=[CommandHandler('end', conv_end)],
     )
 
+    # Define /stock handler workflow
+    stock_handler = ConversationHandler(
+        entry_points=[CommandHandler('stock', stock_start)],
+        states={
+            SHOW_SMY: [MessageHandler(Filters.regex('(?i)trade'), add_dir)],
+            ADD_DIR: [CallbackQueryHandler(add_market)],
+            ADD_MKT: [CallbackQueryHandler(add_stock_code)],
+            ADD_CODE: [MessageHandler(Filters.regex('\w+'), add_stock_price)],
+            ADD_PRICE: [MessageHandler(Filters.regex('\d+(\.\d{1,2})?'), add_stock_lot)],
+            ADD_LOT: [MessageHandler(Filters.regex('^[1-9]\d*$'), add_stock_broker)],
+            ADD_BRK: [CallbackQueryHandler(add_done)],
+
+        },
+        fallbacks=[CommandHandler('end', conv_end)],
+    )
+
     dp = updater.dispatcher
     # /hi
     dp.add_handler(CommandHandler('hi', greet))
@@ -53,6 +76,8 @@ if __name__ == '__main__':
     dp.add_handler(counter_handler)
     # /bbi
     dp.add_handler(bbi_handler)
+    # /stock
+    dp.add_handler(stock_handler)
     # error handler
     dp.add_handler(MessageHandler(Filters.command, unknown))
     # dp.add_handler(CommandHandler('dating', date_counter, pass_job_queue=True))
