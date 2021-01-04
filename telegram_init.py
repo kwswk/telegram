@@ -64,7 +64,10 @@ if __name__ == '__main__':
             ADD_PRICE: [MessageHandler(Filters.regex('\d+(\.\d{1,2})?'), add_stock_lot)],
             ADD_LOT: [MessageHandler(Filters.regex('^[1-9]\d*$'), add_stock_broker)],
             ADD_BRK: [CallbackQueryHandler(add_done)],
-            ADD_DONE: [CommandHandler('trade', add_dir)]
+            ADD_DONE: [
+                CommandHandler('trade', add_dir),
+                CommandHandler('stock', stock_start)
+            ]
         },
         fallbacks=[CommandHandler('end', conv_end)],
     )

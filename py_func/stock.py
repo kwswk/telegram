@@ -16,13 +16,17 @@ from .dynamodb_exchange import scan_db, batch_process_items, insert_item, fetch_
 SHOW_SMY, ADD_DIR, ADD_MKT, ADD_CODE, ADD_PRICE, ADD_LOT, ADD_BRK, ADD_DONE = range(8)
 new_txn_record = dict()
 lst_holding = list()
+list_remove = list()
 
 
 def stock_start(update, context):
 
-    return_text = ""
     lst_code = list()
     lst_holding.clear()
+    list_remove.clear()
+
+    return_text = ""
+    total_value = 0
     total_pnl = 0
     total_pnl_hkd = 0
     total_pnl_usd = 0
@@ -31,58 +35,68 @@ def stock_start(update, context):
         db_table='stock_holding',
         item={'user': update.message.from_user.username}
     )[0])
-    for holding in lst_holding[0]:
 
-        if holding['market'] != 'US':
-            code = f"{holding['code'].zfill(4)}.{holding['market']}"
-        else:
-            code = holding['code']
-        lst_code.append(code)
+    if len(lst_holding[0]) > 0:
 
-    quote_dict = quote_price(lst_code)
+        for holding in lst_holding[0]:
 
-    for idx, holding in enumerate(lst_holding[0]):
+            if holding['market'] != 'US':
+                code = f"{holding['code'].zfill(4)}.{holding['market']}"
+            else:
+                code = holding['code']
+            lst_code.append(code)
 
-        try:
+            list_remove.append({'user': update.message.from_user.username, 'code': holding['code']})
 
-            unrealized_gain = holding['available_sell'] * (
-                        Decimal(quote_dict[idx]['regularMarketPrice']) - holding['avg_price'])
+        quote_dict = quote_price(lst_code)
 
-            if holding['market'] == 'HK':
-                total_pnl += unrealized_gain + holding['realized_gain']
-                total_pnl_hkd = total_pnl
-            elif holding['market'] == 'US':
-                total_pnl += (unrealized_gain + holding['realized_gain']) * Decimal(7.8)
-                total_pnl_usd += unrealized_gain + holding['realized_gain']
+        for idx, holding in enumerate(lst_holding[0]):
 
-            return_text += f"{holding['market']}\t{holding['code']}\n" \
-                           f"{quote_dict[idx]['longName']}\n" \
-                           f"Current price: {quote_dict[idx]['regularMarketPrice']:,}\n\n" \
-                           f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
-                           f"Available to sell: {holding['available_sell']:,}\n\n" \
-                           f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
-                           f"Unrealized P/L: {round(unrealized_gain,0):,}\n" \
-                           f"Total P/L: {round(unrealized_gain + holding['realized_gain'],0):,}\n" \
-                           f"({quote_dict[idx]['quoteSourceName']})\n" \
-                           f"------------------------------------------\n"
-        except:
-            return_text += f"{holding['market']}\t{holding['code']}\n" \
-                           f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
-                           f"Available to sell: {holding['available_sell']:,}\n\n" \
-                           f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
-                           f"(Data is not available from Yahoo API)\n" \
-                           f"------------------------------------------\n"
+            try:
+                market_value = Decimal(quote_dict[idx]['regularMarketPrice']) * holding['available_sell']
+
+                unrealized_gain = holding['available_sell'] * (
+                            Decimal(quote_dict[idx]['regularMarketPrice']) - holding['avg_price'])
+
+                if holding['market'] == 'HK':
+                    total_value += market_value
+                    total_pnl += unrealized_gain + holding['realized_gain']
+                    total_pnl_hkd = total_pnl
+                elif holding['market'] == 'US':
+                    total_value += market_value * Decimal(7.8)
+                    total_pnl += (unrealized_gain + holding['realized_gain']) * Decimal(7.8)
+                    total_pnl_usd += unrealized_gain + holding['realized_gain']
+
+                return_text += f"{holding['market']}\t{holding['code']}\n" \
+                               f"{quote_dict[idx]['longName']}\n" \
+                               f"Current price: {quote_dict[idx]['regularMarketPrice']:,}\n\n" \
+                               f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
+                               f"Available to sell: {holding['available_sell']:,}\n" \
+                               f"Market Value: {round(market_value, 0):,}\n\n" \
+                               f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
+                               f"Unrealized P/L: {round(unrealized_gain,0):,}\n" \
+                               f"Total P/L: {round(unrealized_gain + holding['realized_gain'],0):,}\n" \
+                               f"({quote_dict[idx]['quoteSourceName']})\n" \
+                               f"------------------------------------------\n"
+            except:
+                return_text += f"{holding['market']}\t{holding['code']}\n" \
+                               f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
+                               f"Available to sell: {holding['available_sell']:,}\n\n" \
+                               f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
+                               f"(Data is not available from Yahoo API)\n" \
+                               f"------------------------------------------\n"
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Here's your current holding summary !!\n\n"
-             f"Total P/L in HKD : {round(total_pnl,0):,}\n"
+             f"Total market value: $ {round(total_value,0):,}\n"
+             f"Total P/L in HKD :  $ {round(total_pnl,0):,}\n"
              f"By Market:\n"
-             f"HKD : {round(total_pnl_hkd,0):,}\n"
-             f"USD: {round(total_pnl_usd,0):,}\n\n"
+             f"HKD : $ {round(total_pnl_hkd,0):,}\n"
+             f"USD : $ {round(total_pnl_usd,0):,}\n\n"
              f"Holdings right now,,\n\n"
              f"{return_text}\n\n"
-             'Click /trade to add new trade records\n'
+             'Click /trade to add new trade records\n\n'
              'or click /end to end this session',
     )
 
@@ -160,7 +174,9 @@ def add_stock_price(update, context):
 def add_stock_lot(update, context):
     if new_txn_record['direction'] == 'BUY':
         new_txn_record['buy_price'] = Decimal(update.message.text)
+        new_txn_record['sold_price'] = None
     else:
+        new_txn_record['buy_price'] = None
         new_txn_record['sold_price'] = Decimal(update.message.text)
 
     context.bot.send_message(
@@ -174,7 +190,9 @@ def add_stock_lot(update, context):
 def add_stock_broker(update, context):
     if new_txn_record['direction'] == 'BUY':
         new_txn_record['buy_lot'] = Decimal(update.message.text)
+        new_txn_record['sold_lot'] = None
     else:
+        new_txn_record['buy_lot'] = None
         new_txn_record['sold_lot'] = Decimal(update.message.text)
 
     lst_button = list()
@@ -201,11 +219,20 @@ def add_done(update, context):
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='Done! click /end >> /stock to check your latest statement \n'
-             'or click /trade to add another transaction',
+        text='Done! \n'
+             'Click  /stock to checkout your latest statement \n\n'
+             'Click /trade to add another transaction \n\n'
+             'Click /end to end this session',
     )
 
     insert_item(db_table='stock_txn', item=new_txn_record)
+
+    try:
+        batch_process_items('stock_holding', items=list_remove, keys=['user', 'code'], method='delete')
+    except:
+        pass
+
+    update_summary(update.callback_query.from_user.username)
 
     return ADD_DONE
 
@@ -233,12 +260,12 @@ def quote_price(code_list: list) -> dict:
     return json.loads(response.text)['quoteResponse']['result']
 
 
-def update_summary():
+def update_summary(user_name):
     """
     Update txn records and re-generate holding summary
     :return:
     """
-    result = scan_db(db_table='stock_txn', key='user', cond='erikws')
+    result = scan_db(db_table='stock_txn', key='user', cond=user_name)
     txn = pd.DataFrame(result)
 
     txn = txn.sort_values(by=['user', 'code', 'date', 'direction']).fillna(0)
@@ -275,5 +302,3 @@ def update_summary():
 
     batch_process_items('stock_holding', export_data, ['user', 'code'])
 
-
-update_summary()
