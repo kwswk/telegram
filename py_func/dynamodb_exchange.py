@@ -45,11 +45,14 @@ def delete_item(db_table: str, item: dict):
     table.delete_item(Key=item)
 
 
-def batch_insert_items(db_table: str, items: list, keys: list):
+def batch_process_items(db_table: str, items: list, keys: list, method='insert'):
     table = dynamodb.Table(db_table)
     with table.batch_writer(overwrite_by_pkeys=keys) as batch:
         for item in items:
-            batch.put_item(Item=item)
+            if method == 'insert':
+                batch.put_item(Item=item)
+            elif method == 'delete':
+                batch.delete_item(Key=item)
 
 
 def scan_db(db_table: str, key: str, cond: str):
