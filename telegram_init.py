@@ -16,7 +16,7 @@ from py_func.stock import \
     add_stock_lot, add_stock_broker, add_done, \
     SHOW_SMY, ADD_DIR, ADD_MKT, \
     ADD_CODE, ADD_PRICE, ADD_LOT, \
-    ADD_BRK
+    ADD_BRK, ADD_DONE
 
 # get environment vars
 parser = argparse.ArgumentParser()
@@ -57,14 +57,14 @@ if __name__ == '__main__':
     stock_handler = ConversationHandler(
         entry_points=[CommandHandler('stock', stock_start)],
         states={
-            SHOW_SMY: [MessageHandler(Filters.regex('(?i)trade'), add_dir)],
+            SHOW_SMY: [CommandHandler('trade',add_dir)],
             ADD_DIR: [CallbackQueryHandler(add_market)],
             ADD_MKT: [CallbackQueryHandler(add_stock_code)],
             ADD_CODE: [MessageHandler(Filters.regex('\w+'), add_stock_price)],
             ADD_PRICE: [MessageHandler(Filters.regex('\d+(\.\d{1,2})?'), add_stock_lot)],
             ADD_LOT: [MessageHandler(Filters.regex('^[1-9]\d*$'), add_stock_broker)],
             ADD_BRK: [CallbackQueryHandler(add_done)],
-
+            ADD_DONE: [CommandHandler('trade', add_dir)]
         },
         fallbacks=[CommandHandler('end', conv_end)],
     )

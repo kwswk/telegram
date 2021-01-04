@@ -20,7 +20,7 @@ def stock_start(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Here's your stock summary\n\n"
-             'reply "trade" to add new trade records\n',
+             'reply /trade to add new trade records\n',
     )
 
     return SHOW_SMY
@@ -146,7 +146,8 @@ def add_done(update, context):
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='Done! click /end >> /stock to check your latest statement',
+        text='Done! click /end >> /stock to check your latest statement \n'
+             'or click /trade to add another transaction',
     )
 
     insert_item(db_table='stock_txn', item=new_txn_record)
