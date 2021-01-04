@@ -89,7 +89,7 @@ def add_stock_code(update, context):
 
 def add_stock_price(update, context):
 
-    new_txn_record['code'] = update.message.text.upper()
+    new_txn_record['code '] = update.message.text.upper()
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -214,6 +214,8 @@ def update_summary():
         ['user', 'code', 'market', 'cum_book_value', 'available_sell', 'avg_price']
     ]
 
-    export_data = json.loads(stock_holding.to_json(orient="records"), parse_float=Decimal)
+    export_data = json.loads(
+        stock_holding.to_json(orient="records"), parse_float=Decimal
+    )
 
     batch_insert_items('stock_holding', export_data, ['user', 'code'])
