@@ -57,32 +57,33 @@ def stock_start(update, context):
 
             return_text += f"{holding['market']}\t{holding['code']}\n" \
                            f"{quote_dict[idx]['longName']}\n" \
-                           f"Current price: {quote_dict[idx]['regularMarketPrice']}\n\n" \
-                           f"Average buy price: {round(holding['avg_price'], 3)}\n" \
-                           f"Available to sell: {holding['available_sell']}\n\n" \
-                           f"Realized gain: {round(holding['realized_gain'], 0)}\n" \
-                           f"Unrealized P/L: {round(unrealized_gain,0)}\n" \
-                           f"Total P/L: {round(unrealized_gain + holding['realized_gain'],0)}\n" \
+                           f"Current price: {quote_dict[idx]['regularMarketPrice']:,}\n\n" \
+                           f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
+                           f"Available to sell: {holding['available_sell']:,}\n\n" \
+                           f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
+                           f"Unrealized P/L: {round(unrealized_gain,0):,}\n" \
+                           f"Total P/L: {round(unrealized_gain + holding['realized_gain'],0):,}\n" \
                            f"({quote_dict[idx]['quoteSourceName']})\n" \
                            f"------------------------------------------\n"
         except:
             return_text += f"{holding['market']}\t{holding['code']}\n" \
-                           f"Average buy price: {round(holding['avg_price'], 3)}\n" \
-                           f"Available to sell: {holding['available_sell']}\n\n" \
-                           f"Realized gain: {round(holding['realized_gain'], 0)}\n" \
+                           f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
+                           f"Available to sell: {holding['available_sell']:,}\n\n" \
+                           f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
                            f"(Data is not available from Yahoo API)\n" \
                            f"------------------------------------------\n"
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Here's your current holding summary !\n\n"
-             f"Total P/L in HKD : {round(total_pnl,0)}\n"
+        text=f"Here's your current holding summary !!\n\n"
+             f"Total P/L in HKD : {round(total_pnl,0):,}\n"
              f"By Market:\n"
-             f"HKD : {round(total_pnl_hkd,0)}\n"
-             f"USD: {round(total_pnl_usd,0)}\n\n"
+             f"HKD : {round(total_pnl_hkd,0):,}\n"
+             f"USD: {round(total_pnl_usd,0):,}\n\n"
              f"Holdings right now,,\n\n"
              f"{return_text}\n\n"
-             'reply /trade to add new trade records\n',
+             'Click /trade to add new trade records\n'
+             'or click /end to end this session',
     )
 
     return SHOW_SMY
