@@ -1,11 +1,13 @@
 import argparse
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, \
-    CallbackQueryHandler, ConversationHandler
 
-from py_func import greet, unknown, conv_end
+from telegram.ext import \
+    CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, \
+    MessageHandler, Updater
+
+from py_func import conv_end, greet, unknown
 from py_func.bbi_info import \
-    bbi_start, bbi_callback_handler, \
-    ROUTE, DEST, SEC_ROUTE
+    DEST, ROUTE, SEC_ROUTE, \
+    bbi_callback_handler, bbi_start
 from py_func.counter import \
     date_counter, add_dates_handler, remove_dates_handler, \
     SHOW_DATE, ADD_DATE, ADD_DESC, \
@@ -20,7 +22,7 @@ from py_func.stock import \
 
 # get environment vars
 parser = argparse.ArgumentParser()
-parser.add_argument("--botkey", help='Key from bot father')
+parser.add_argument('--botkey', help='Key from bot father')
 args = parser.parse_args()
 
 # Bot Credential
@@ -31,7 +33,11 @@ if __name__ == '__main__':
     bbi_handler = ConversationHandler(
         entry_points=[CommandHandler('bbi', bbi_start)],
         states={
-            ROUTE: [MessageHandler(Filters.regex('^\w?[0-9]+\w?$'), bbi_callback_handler)],
+            ROUTE: [
+                MessageHandler(
+                    Filters.regex('^\w?[0-9]+\w?$'), bbi_callback_handler,
+                ),
+            ],
             DEST: [CallbackQueryHandler(bbi_callback_handler)],
             SEC_ROUTE: [CallbackQueryHandler(bbi_callback_handler)],
         },
@@ -42,11 +48,24 @@ if __name__ == '__main__':
     counter_handler = ConversationHandler(
         entry_points=[CommandHandler('counter', date_counter)],
         states={
-            SHOW_DATE: [MessageHandler(Filters.regex('(?i)add'), add_dates_handler),
-                        MessageHandler(Filters.regex('(?i)remove'), remove_dates_handler)
-                        ],
-            ADD_DATE: [MessageHandler(Filters.regex('^\d{4}\-\d{1,2}\-\d{1,2}$'), add_dates_handler)],
-            ADD_DESC: [MessageHandler(Filters.regex('\w+'), add_dates_handler)],
+            SHOW_DATE: [
+                MessageHandler(Filters.regex('(?i)add'), add_dates_handler),
+                MessageHandler(
+                    Filters.regex('(?i)remove'),
+                    remove_dates_handler,
+                ),
+            ],
+            ADD_DATE: [
+                MessageHandler(
+                    Filters.regex('^\d{4}\-\d{1,2}\-\d{1,2}$'),
+                    add_dates_handler,
+                ),
+            ],
+            ADD_DESC: [
+                MessageHandler(
+                    Filters.regex('\w+'), add_dates_handler,
+                ),
+            ],
             REMOVE_DATE: [CallbackQueryHandler(remove_dates_handler)],
             REMOVE_SEL: [CallbackQueryHandler(remove_dates_handler)],
         },
@@ -57,17 +76,26 @@ if __name__ == '__main__':
     stock_handler = ConversationHandler(
         entry_points=[CommandHandler('stock', stock_start)],
         states={
-            SHOW_SMY: [CommandHandler('trade',add_dir)],
+            SHOW_SMY: [CommandHandler('trade', add_dir)],
             ADD_DIR: [CallbackQueryHandler(add_market)],
             ADD_MKT: [CallbackQueryHandler(add_stock_code)],
-            ADD_CODE: [MessageHandler(Filters.regex('\w+'), add_stock_price)],
-            ADD_PRICE: [MessageHandler(Filters.regex('\d+(\.\d{1,2})?'), add_stock_lot)],
-            ADD_LOT: [MessageHandler(Filters.regex('^[1-9]\d*$'), add_stock_broker)],
+            ADD_CODE: [
+                MessageHandler(Filters.regex('\w+'), add_stock_price),
+            ],
+            ADD_PRICE: [
+                MessageHandler(
+                    Filters.regex('\d+(\.\d{1,2})?'),
+                    add_stock_lot,
+                ),
+            ],
+            ADD_LOT: [
+                MessageHandler(Filters.regex('^[1-9]\d*$'), add_stock_broker),
+            ],
             ADD_BRK: [CallbackQueryHandler(add_done)],
             ADD_DONE: [
                 CommandHandler('trade', add_dir),
-                CommandHandler('stock', stock_start)
-            ]
+                CommandHandler('stock', stock_start),
+            ],
         },
         fallbacks=[CommandHandler('end', conv_end)],
     )
@@ -83,6 +111,5 @@ if __name__ == '__main__':
     dp.add_handler(stock_handler)
     # error handler
     dp.add_handler(MessageHandler(Filters.command, unknown))
-    # dp.add_handler(CommandHandler('dating', date_counter, pass_job_queue=True))
 
     updater.start_polling()
