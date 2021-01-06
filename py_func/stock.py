@@ -277,16 +277,19 @@ def update_summary(user_name):
     txn['code'] = txn['code'].astype(str)
 
     txn['cum_buy'] = txn.groupby(['user', 'code'])['buy_lot'].cumsum()
-    txn['cum_book_value'] = txn.assign(col=txn.buy_lot * txn.buy_price).groupby(['user', 'code']).col.cumsum()
     txn['cum_sell'] = txn.groupby(['user', 'code'])['sold_lot'].cumsum()
     txn['available_sell'] = txn['cum_buy'] - txn['cum_sell']
-    txn['avg_price'] = txn.cum_book_value / txn.cum_buy
 
     # Get Status
     txn.loc[txn.available_sell == 0, 'settle_date'] = txn.date
     txn.settle_date = txn.settle_date.fillna(datetime(1900, 1, 1))
     txn['settle_date'] = txn.groupby(['user', 'code'])['settle_date'].transform('max')
     txn['status'] = np.where(txn.date > txn.settle_date, 'OPEN', 'CLOSE')
+
+    # Get avg price
+    txn['cum_buy'] = txn.groupby(['user', 'code', 'status'])['buy_lot'].cumsum()
+    txn['cum_book_value'] = txn.assign(col=txn.buy_lot * txn.buy_price).groupby(['user', 'code','status']).col.cumsum()
+    txn['avg_price'] = txn.cum_book_value / txn.cum_buy
     txn['realized_gain'] = txn.assign(col=txn.sold_lot * (txn.sold_price - txn.avg_price)).groupby(
         ['user', 'code', 'status']).col.cumsum()
 
@@ -301,4 +304,3 @@ def update_summary(user_name):
     )
 
     batch_process_items('stock_holding', export_data, ['user', 'code'])
-
