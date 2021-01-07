@@ -16,17 +16,27 @@ from py_func.stock import \
     stock_start, add_dir, add_market, \
     add_stock_code, add_stock_price, \
     add_stock_lot, add_stock_broker, add_done, \
+    remove_code_select, remove_txn_select, remove_txn_done, \
     SHOW_SMY, ADD_DIR, ADD_MKT, \
     ADD_CODE, ADD_PRICE, ADD_LOT, \
-    ADD_BRK, ADD_DONE
+    ADD_BRK, ADD_DONE, \
+    REMOVE_CODE, REMOVE_TXN, REMOVE_DONE
 
 # get environment vars
 parser = argparse.ArgumentParser()
 parser.add_argument('--botkey', help='Key from bot father')
+parser.add_argument('--rapidapikey', help='Rapid API Key')
+parser.add_argument('--rapidapihost', help='Rapid API host')
 args = parser.parse_args()
 
 # Bot Credential
 updater = Updater(args.botkey, use_context=True)
+
+
+# class rapid_api_gateway():
+#     rapid_api_key = args.rapidapikey
+#     rapid_api_host = args.rapidapihost
+
 
 if __name__ == '__main__':
     # Define /bbi handler workflow
@@ -76,7 +86,11 @@ if __name__ == '__main__':
     stock_handler = ConversationHandler(
         entry_points=[CommandHandler('stock', stock_start)],
         states={
-            SHOW_SMY: [CommandHandler('trade', add_dir)],
+            SHOW_SMY: [
+                CommandHandler('trade', add_dir),
+                CommandHandler('remove', remove_code_select),
+                CommandHandler('stock', stock_start),
+            ],
             ADD_DIR: [CallbackQueryHandler(add_market)],
             ADD_MKT: [CallbackQueryHandler(add_stock_code)],
             ADD_CODE: [
@@ -96,6 +110,12 @@ if __name__ == '__main__':
                 CommandHandler('trade', add_dir),
                 CommandHandler('stock', stock_start),
             ],
+            REMOVE_CODE: [CallbackQueryHandler(remove_txn_select)],
+            REMOVE_TXN: [CallbackQueryHandler(remove_txn_done)],
+            REMOVE_DONE: [
+                CommandHandler('remove', remove_code_select),
+                CommandHandler('stock', stock_start),
+            ]
         },
         fallbacks=[CommandHandler('end', conv_end)],
     )
@@ -113,3 +133,4 @@ if __name__ == '__main__':
     dp.add_handler(MessageHandler(Filters.command, unknown))
 
     updater.start_polling()
+

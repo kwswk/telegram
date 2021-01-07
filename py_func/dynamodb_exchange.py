@@ -53,11 +53,18 @@ def batch_process_items(db_table: str, items: list, keys: list, method='insert')
                 batch.delete_item(Key=item)
 
 
-def scan_db(db_table: str, key: str, cond: str):
+def scan_db(db_table: str, key: str, cond: str, key2=None, cond2=None):
     table = dynamodb.Table(db_table)
-    response = table.scan(
-        FilterExpression=Attr(key).eq(cond)
-    )
+
+    if cond2 is None:
+        response = table.scan(
+            FilterExpression=Attr(key).eq(cond)
+        )
+    else:
+        response = table.scan(
+            FilterExpression=Attr(key).eq(cond) & Attr(key2).eq(cond2)
+        )
+
     items = response['Items']
 
     return items

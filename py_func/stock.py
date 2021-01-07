@@ -13,14 +13,14 @@ from . import build_menu
 from .dynamodb_exchange import scan_db, batch_process_items, insert_item, fetch_item_by_key
 
 # Global vars:
-SHOW_SMY, ADD_DIR, ADD_MKT, ADD_CODE, ADD_PRICE, ADD_LOT, ADD_BRK, ADD_DONE = range(8)
+SHOW_SMY, ADD_DIR, ADD_MKT, ADD_CODE, ADD_PRICE, ADD_LOT, ADD_BRK, ADD_DONE, \
+REMOVE_CODE, REMOVE_TXN, REMOVE_DONE = range(11)
 new_txn_record = dict()
 lst_holding = list()
 list_remove = list()
 
 
 def stock_start(update, context):
-
     lst_code = list()
     lst_holding.clear()
     list_remove.clear()
@@ -56,7 +56,7 @@ def stock_start(update, context):
                 market_value = Decimal(quote_dict[idx]['regularMarketPrice']) * holding['available_sell']
 
                 unrealized_gain = holding['available_sell'] * (
-                            Decimal(quote_dict[idx]['regularMarketPrice']) - holding['avg_price'])
+                        Decimal(quote_dict[idx]['regularMarketPrice']) - holding['avg_price'])
 
                 if holding['market'] == 'HK':
                     total_value += market_value
@@ -74,8 +74,8 @@ def stock_start(update, context):
                                f"Available to sell: {holding['available_sell']:,}\n" \
                                f"Market Value: {round(market_value, 0):,}\n\n" \
                                f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
-                               f"Unrealized P/L: {round(unrealized_gain,0):,}\n" \
-                               f"Total P/L: {round(unrealized_gain + holding['realized_gain'],0):,}\n" \
+                               f"Unrealized P/L: {round(unrealized_gain, 0):,}\n" \
+                               f"Total P/L: {round(unrealized_gain + holding['realized_gain'], 0):,}\n" \
                                f"({quote_dict[idx]['quoteSourceName']})\n" \
                                f"------------------------------------------\n"
             except:
@@ -89,14 +89,16 @@ def stock_start(update, context):
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Here's your current holding summary !!\n\n"
-             f"Total market value: $ {round(total_value,0):,}\n"
-             f"Total P/L in HKD :  $ {round(total_pnl,0):,}\n"
+             f"Total market value: $ {round(total_value, 0):,}\n"
+             f"Total P/L in HKD :  $ {round(total_pnl, 0):,}\n"
              f"By Market:\n"
-             f"HKD : $ {round(total_pnl_hkd,0):,}\n"
-             f"USD : $ {round(total_pnl_usd,0):,}\n\n"
+             f"HKD : $ {round(total_pnl_hkd, 0):,}\n"
+             f"USD : $ {round(total_pnl_usd, 0):,}\n\n"
              f"Holdings right now,,\n\n"
              f"{return_text}\n\n"
              'Click /trade to add new trade records\n\n'
+             'Click /remove to remove wrong records\n\n'
+             'Click /stock to get the latest summary\n\n'
              'or click /end to end this session',
     )
 
@@ -237,6 +239,83 @@ def add_done(update, context):
     return ADD_DONE
 
 
+def remove_code_select(update, context):
+    lst_button = list()
+
+    for i in lst_holding[0]:
+        lst_button.append(
+            InlineKeyboardButton(
+                f"{i['market']} - {i['code']}",
+                callback_data=str(i['code']),
+            )
+        )
+
+    reply_markup = InlineKeyboardMarkup(build_menu(lst_button, n_cols=4))
+
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text='Which stock got input error?',
+        reply_markup=reply_markup,
+    )
+    return REMOVE_CODE
+
+
+def remove_txn_select(update, context):
+    result = scan_db(
+        db_table='stock_txn',
+        key='user',
+        cond=update.callback_query.from_user.username,
+        key2='code',
+        cond2=update.callback_query.data,
+    )
+
+    lst_button = list()
+
+    for i in result:
+        if i['buy_lot'] is not None:
+            reply = f"[{i['broker']}] {i['date']} BUY {str(i['buy_lot'])} @ {str(i['buy_price'])}"
+        else:
+            reply = f"[{i['broker']}] {i['date']} SOLD {str(i['sold_lot'])} @ {str(i['sold_price'])}"
+
+        lst_button.append(
+            InlineKeyboardButton(reply, callback_data=str(i['txn_id']))
+        )
+
+    reply_markup = InlineKeyboardMarkup(build_menu(lst_button, n_cols=1))
+
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text='Which stock got input error?',
+        reply_markup=reply_markup,
+    )
+    return REMOVE_TXN
+
+
+def remove_txn_done(update, context):
+    rec_remove = [dict(
+        txn_id=update.callback_query.data,
+        user=update.callback_query.from_user.username,
+    )]
+    batch_process_items('stock_txn', items=rec_remove, keys=['txn_id', 'user'], method='delete')
+
+    try:
+        batch_process_items('stock_holding', items=list_remove, keys=['user', 'code'], method='delete')
+    except:
+        pass
+
+    update_summary(update.callback_query.from_user.username)
+
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text='Remove done!\n\n'
+             'click /stock to review your updated summary\n\n'
+             'click /remove to remove more\n\n'
+             'or click /end to kill this session',
+    )
+
+    return REMOVE_DONE
+
+
 def quote_price(code_list: list) -> dict:
     """
     calling Yahoo API (100 requests per day)
@@ -288,7 +367,7 @@ def update_summary(user_name):
 
     # Get avg price
     txn['cum_buy'] = txn.groupby(['user', 'code', 'status'])['buy_lot'].cumsum()
-    txn['cum_book_value'] = txn.assign(col=txn.buy_lot * txn.buy_price).groupby(['user', 'code','status']).col.cumsum()
+    txn['cum_book_value'] = txn.assign(col=txn.buy_lot * txn.buy_price).groupby(['user', 'code', 'status']).col.cumsum()
     txn['avg_price'] = txn.cum_book_value / txn.cum_buy
     txn['realized_gain'] = txn.assign(col=txn.sold_lot * (txn.sold_price - txn.avg_price)).groupby(
         ['user', 'code', 'status']).col.cumsum()
