@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 import json
 import numpy as np
+import os
 import pandas as pd
 import requests
 import uuid
@@ -14,7 +15,7 @@ from .dynamodb_exchange import scan_db, batch_process_items, insert_item, fetch_
 
 # Global vars:
 SHOW_SMY, ADD_DIR, ADD_MKT, ADD_CODE, ADD_PRICE, ADD_LOT, ADD_BRK, ADD_DONE, \
-REMOVE_CODE, REMOVE_TXN, REMOVE_DONE = range(11)
+    REMOVE_CODE, REMOVE_TXN, REMOVE_DONE = range(11)
 new_txn_record = dict()
 lst_holding = list()
 list_remove = list()
@@ -330,8 +331,8 @@ def quote_price(code_list: list) -> dict:
     querystring = {"symbols": quote_str}
 
     headers = {
-        'x-rapidapi-key': "5c2f24892fmsh58278fdf1cebf0fp1bb586jsndda6a2eceff8",
-        'x-rapidapi-host': "yahoo-finance-low-latency.p.rapidapi.com"
+        'x-rapidapi-key': os.environ['rapidapikey'],
+        'x-rapidapi-host':  os.environ['rapidapihost'],
     }
 
     response = requests.request("GET", url, headers=headers, params=querystring)

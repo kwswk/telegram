@@ -1,4 +1,4 @@
-import argparse
+import os
 
 from telegram.ext import \
     CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, \
@@ -22,20 +22,17 @@ from py_func.stock import \
     ADD_BRK, ADD_DONE, \
     REMOVE_CODE, REMOVE_TXN, REMOVE_DONE
 
-# get environment vars
-parser = argparse.ArgumentParser()
-parser.add_argument('--botkey', help='Key from bot father')
-parser.add_argument('--rapidapikey', help='Rapid API Key')
-parser.add_argument('--rapidapihost', help='Rapid API host')
-args = parser.parse_args()
 
 # Bot Credential
-updater = Updater(args.botkey, use_context=True)
+updater = Updater(os.environ['botkey'], use_context=True)
 
 
-# class rapid_api_gateway():
-#     rapid_api_key = args.rapidapikey
-#     rapid_api_host = args.rapidapihost
+def get_api_keys():
+
+    rapid_api_key = args.rapidapikey
+    rapid_api_host = args.rapidapihost
+
+    return rapid_api_key, rapid_api_host
 
 
 if __name__ == '__main__':
