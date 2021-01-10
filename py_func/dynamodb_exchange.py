@@ -1,9 +1,7 @@
-from decimal import Decimal
-
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name='ap-east-1')
 
 
 def insert_item(db_table: str, item: dict):
@@ -45,12 +43,42 @@ def delete_item(db_table: str, item: dict):
     table.delete_item(Key=item)
 
 
-def scan(db_table: str, item: dict):
+def batch_process_items(db_table: str, items: list, keys: list, method='insert'):
     table = dynamodb.Table(db_table)
-    response = table.scan(
-        FilterExpression=Attr('min_spend_all').gt(10)  # var.nest.eq('A') < support nested json
-    )
+    with table.batch_writer(overwrite_by_pkeys=keys) as batch:
+        for item in items:
+            if method == 'insert':
+                batch.put_item(Item=item)
+            elif method == 'delete':
+                batch.delete_item(Key=item)
+
+
+def scan_db(db_table: str, key: str, cond: str, key2=None, cond2=None):
+    table = dynamodb.Table(db_table)
+
+    if cond2 is None:
+        response = table.scan(
+            FilterExpression=Attr(key).eq(cond)
+        )
+    else:
+        response = table.scan(
+            FilterExpression=Attr(key).eq(cond) & Attr(key2).eq(cond2)
+        )
+
     items = response['Items']
+
+    return items
+
+
+def update_table(db_table: str, keys: dict, items=None):
+    table = dynamodb.Table(db_table)
+    table.update_item(
+        Key=keys,
+        UpdateExpression='SET load_date = :val1',
+        ExpressionAttributeValues={
+            ':val1': '2021-01-02'
+        }
+    )
 
 
 def create_table():
@@ -87,39 +115,6 @@ def create_table():
     # table.meta.client.get_waiter('table_exists').wait(TableName='users')
 
 
-def batch_insert_items():
-    table = dynamodb.Table('campaign')
-    with table.batch_writer(overwrite_by_pkeys=['bank', 'start_date']) as batch:
-        batch.put_item(
-            Item={
-                'bank': 'BOCHK',
-                'start_date': '2020-11-15',
-                'expiry_date': '2020-12-31',
-                'rebate_date': '2020-02-22',
-                'card': 'Taobao',
-                'rebate_type': 'gift point',
-                'rebate_cap': 100,
-                'rebate_ratio': Decimal('0.5'),
-                'min_spend_each': 1000,
-                'min_spend_all': 10000
-            }
-        )
-        batch.put_item(
-            Item={
-                'bank': 'HSBC',
-                'start_date': '2020-12-15',
-                'expiry_date': '2021-12-31',
-                'rebate_date': '2022-02-22',
-                'card': 'VS',
-                'rebate_type': 'gift point',
-                'rebate_cap': 300,
-                'rebate_ratio': Decimal('0.056'),
-                'min_spend_each': 500,
-                'min_spend_all': 8000
-            }
-        )
-
-
 def query():
     table = dynamodb.Table('campaign')
     response = table.query(
@@ -134,16 +129,5 @@ def delete_table():
     table.delete()
 
 
-def update():
-    table = dynamodb.Table('campaign')
-    table.update_item(
-        Key={
-            'bank': 'HSBC',
-            'start_date': '2020-12-15',
-        },
-        UpdateExpression='SET progress = :val1',
-        ExpressionAttributeValues={
-            ':val1': 100
-        }
-    )
+
 
