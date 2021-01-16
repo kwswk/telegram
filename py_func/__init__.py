@@ -9,7 +9,7 @@ def greet(update, context):
              "/counter\t\t🤑 Trigger time machine\n\n "
              "/bbi\t\t🚌 Check Bus Interchange info\n\n"
              "/stock\t\t🤑 Track stock holdings\n\n"
-             "/about_me\t\t🤖 Track stock holdings\n\n"
+             "/about_me\t\t🤖 About this bot\n\n"
     )
 
 
