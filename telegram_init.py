@@ -4,7 +4,7 @@ from telegram.ext import \
     CallbackQueryHandler, CommandHandler, ConversationHandler, Filters, \
     MessageHandler, Updater
 
-from py_func import conv_end, greet, unknown
+from py_func import about_me, conv_end, greet, unknown
 from py_func.bbi_info import \
     DEST, ROUTE, SEC_ROUTE, \
     bbi_callback_handler, bbi_start
@@ -28,6 +28,7 @@ updater = Updater(os.environ['botkey'], use_context=True)
 
 
 if __name__ == '__main__':
+
     # Define /bbi handler workflow
     bbi_handler = ConversationHandler(
         entry_points=[CommandHandler('bbi', bbi_start)],
@@ -118,6 +119,8 @@ if __name__ == '__main__':
     dp.add_handler(bbi_handler)
     # /stock
     dp.add_handler(stock_handler)
+    # /aboutme
+    dp.add_handler(CommandHandler('about_me', about_me))
     # error handler
     dp.add_handler(MessageHandler(Filters.command, unknown))
 
