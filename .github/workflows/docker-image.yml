@@ -61,5 +61,5 @@ jobs:
       with:
         task-definition: ecs_ci.json
         service: telegram-service
-        cluster: telegrambot
+        cluster: telegram
         wait-for-service-stability: true
