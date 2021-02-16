@@ -12,6 +12,8 @@ from py_func.counter import \
     date_counter, add_dates_handler, remove_dates_handler, \
     SHOW_DATE, ADD_DATE, ADD_DESC, \
     REMOVE_DATE, REMOVE_SEL
+from py_func.crypto_fx import ask_from_curr, ask_to_curr, return_rate, \
+    FX_FROM, FX_RATE, FX_TO
 from py_func.stock import \
     stock_start, add_dir, add_market, \
     add_stock_code, add_stock_price, \
@@ -110,6 +112,20 @@ if __name__ == '__main__':
         fallbacks=[CommandHandler('end', conv_end)],
     )
 
+    # Define /fx handler workflow
+    fx_handler = ConversationHandler(
+        entry_points=[CommandHandler('fx', ask_from_curr)],
+        states={
+            FX_FROM: [MessageHandler(Filters.regex('\D{3}'), ask_to_curr)],
+            FX_TO: [MessageHandler(Filters.regex('\D{3}'), return_rate)],
+            FX_RATE: [
+                CommandHandler('fx', ask_from_curr),
+                MessageHandler(Filters.regex('\D{3}'), return_rate),
+            ]
+        },
+        fallbacks=[CommandHandler('end', conv_end)],
+    )
+
     dp = updater.dispatcher
     # /hi
     dp.add_handler(CommandHandler('hi', greet))
@@ -119,6 +135,8 @@ if __name__ == '__main__':
     dp.add_handler(bbi_handler)
     # /stock
     dp.add_handler(stock_handler)
+    # /fx
+    dp.add_handler(fx_handler)
     # /aboutme
     dp.add_handler(CommandHandler('about_me', about_me))
     # error handler
