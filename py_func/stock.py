@@ -85,7 +85,7 @@ def stock_start(update, mode):
                     total_pnl += (unrealized_gain + holding['realized_gain']) * Decimal(7.8)
                     total_pnl_usd += unrealized_gain + holding['realized_gain']
                     day_pnl += delta_unit_gain * 7.8
-                    day_pnl_usd = day_pnl
+                    day_pnl_usd += delta_unit_gain * 7.8
 
                 return_text += f"{flag.flag(holding['market'])}\t{holding['code']}\n" \
                                f"{quote_dict[idx]['longName']}\n" \
