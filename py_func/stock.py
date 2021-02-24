@@ -2,12 +2,13 @@ import ast
 from datetime import datetime
 from decimal import Decimal
 import json
-import numpy as np
 import os
-import pandas as pd
 import requests
 import uuid
 
+import flag
+import numpy as np
+import pandas as pd
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from . import build_menu
@@ -15,27 +16,37 @@ from .dynamodb_exchange import scan_db, batch_process_items, insert_item, fetch_
 
 # Global vars:
 SHOW_SMY, ADD_DIR, ADD_MKT, ADD_CODE, ADD_PRICE, ADD_LOT, ADD_BRK, ADD_DONE, \
-    REMOVE_CODE, REMOVE_TXN, REMOVE_DONE = range(11)
+REMOVE_CODE, REMOVE_TXN, REMOVE_DONE = range(11)
 new_txn_record = dict()
 lst_holding = list()
 list_remove = list()
 
 
-def stock_start(update, context):
+def stock_start(update, mode):
     lst_code = list()
     lst_holding.clear()
     list_remove.clear()
 
     return_text = ""
+    day_pnl = 0
+    day_pnl_hkd = 0
+    day_pnl_usd = 0
     total_value = 0
     total_pnl = 0
     total_pnl_hkd = 0
     total_pnl_usd = 0
 
-    lst_holding.append(fetch_item_by_key(
-        db_table='stock_holding',
-        item={'user': update.message.from_user.username}
-    )[0])
+    if mode == 1:
+        user = update.message.from_user.username
+    else:
+        user = update.callback_query.from_user.username
+
+    lst_holding.append(
+        fetch_item_by_key(
+            db_table='stock_holding',
+            item={'user': user}
+        )[0]
+    )
 
     if len(lst_holding[0]) > 0:
 
@@ -47,7 +58,7 @@ def stock_start(update, context):
                 code = holding['code']
             lst_code.append(code)
 
-            list_remove.append({'user': update.message.from_user.username, 'code': holding['code']})
+            list_remove.append({'user': user, 'code': holding['code']})
 
         quote_dict = quote_price(lst_code)
 
@@ -57,52 +68,88 @@ def stock_start(update, context):
                 market_value = Decimal(quote_dict[idx]['regularMarketPrice']) * holding['available_sell']
 
                 unrealized_gain = holding['available_sell'] * (
-                        Decimal(quote_dict[idx]['regularMarketPrice']) - holding['avg_price'])
+                        Decimal(quote_dict[idx]['regularMarketPrice']) - holding['avg_price']
+                )
+                delta_unit_gain = \
+                    (quote_dict[idx]['regularMarketPrice'] - quote_dict[idx]['regularMarketPreviousClose']) \
+                    * float(holding['available_sell'])
 
                 if holding['market'] == 'HK':
                     total_value += market_value
                     total_pnl += unrealized_gain + holding['realized_gain']
                     total_pnl_hkd = total_pnl
+                    day_pnl += delta_unit_gain
+                    day_pnl_hkd = day_pnl
                 elif holding['market'] == 'US':
                     total_value += market_value * Decimal(7.8)
                     total_pnl += (unrealized_gain + holding['realized_gain']) * Decimal(7.8)
                     total_pnl_usd += unrealized_gain + holding['realized_gain']
+                    day_pnl += delta_unit_gain * 7.8
+                    day_pnl_usd = day_pnl
 
-                return_text += f"{holding['market']}\t{holding['code']}\n" \
+                return_text += f"{flag.flag(holding['market'])}\t{holding['code']}\n" \
                                f"{quote_dict[idx]['longName']}\n" \
                                f"Current price: {quote_dict[idx]['regularMarketPrice']:,}\n\n" \
                                f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
                                f"Available to sell: {holding['available_sell']:,}\n" \
                                f"Market Value: {round(market_value, 0):,}\n\n" \
+                               f"Day P/L: $ {delta_unit_gain:,.1f}\n" \
                                f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
                                f"Unrealized P/L: {round(unrealized_gain, 0):,}\n" \
                                f"Total P/L: {round(unrealized_gain + holding['realized_gain'], 0):,}\n" \
                                f"({quote_dict[idx]['quoteSourceName']})\n" \
                                f"------------------------------------------\n"
             except:
-                return_text += f"{holding['market']}\t{holding['code']}\n" \
+                return_text += f"{flag.flag(holding['market'])}\t{holding['code']}\n" \
                                f"Average buy price: {round(holding['avg_price'], 3):,}\n" \
                                f"Available to sell: {holding['available_sell']:,}\n\n" \
                                f"Realized P/L: {round(holding['realized_gain'], 0):,}\n" \
                                f"(Data is not available from Yahoo API)\n" \
                                f"------------------------------------------\n"
 
+    return f"Here's your current holding summary !!\n\n" \
+           + f"📈Book value: $ {round(total_value, 0):,}\n" \
+           + f"Total P/L (HKD) :  $ {round(total_pnl, 0):,} / $ {round(day_pnl, 0):,} (Day) \n\n" \
+           + f"🏳️‍🌈By Market:\n" \
+           + f"{flag.flag('HK')} : $ {round(total_pnl_hkd, 0):,} / $ {round(day_pnl_hkd, 0):,} (Day) \n" \
+           + f"{flag.flag('US')} : $ {round(total_pnl_usd, 0):,} / $ {round(day_pnl_usd, 0):,} (Day) \n\n" \
+           + f"😻😻😻 Holdings right now 😻😻😻\n\n" \
+           + f"{return_text}\n\n" \
+           + 'Click /trade to add new trade records\n\n' \
+           + 'Click /remove to remove wrong records\n\n' \
+           + 'or click /end to end this session\n\n' \
+           + f'Update time: {datetime.now().strftime("%Y-%m-%dT%H:%M:%S")}'
+
+
+def stock_summary_init(update, context):
+    reply_markup = InlineKeyboardMarkup(
+        build_menu(
+            [InlineKeyboardButton('Update summary', callback_data='Update summary')],
+            n_cols=1,
+        ),
+    )
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Here's your current holding summary !!\n\n"
-             f"Total market value: $ {round(total_value, 0):,}\n"
-             f"Total P/L in HKD :  $ {round(total_pnl, 0):,}\n"
-             f"By Market:\n"
-             f"HKD : $ {round(total_pnl_hkd, 0):,}\n"
-             f"USD : $ {round(total_pnl_usd, 0):,}\n\n"
-             f"Holdings right now,,\n\n"
-             f"{return_text}\n\n"
-             'Click /trade to add new trade records\n\n'
-             'Click /remove to remove wrong records\n\n'
-             'Click /stock to get the latest summary\n\n'
-             'or click /end to end this session',
+        text=stock_start(update, 1),
+        reply_markup=reply_markup,
+    )
+    return SHOW_SMY
+
+
+def stock_summary_update(update, context):
+    reply_markup = InlineKeyboardMarkup(
+        build_menu(
+            [InlineKeyboardButton('Update summary', callback_data='Update summary')],
+            n_cols=1,
+        ),
     )
 
+    context.bot.edit_message_text(
+        chat_id=update.effective_chat.id,
+        message_id=update.callback_query.message.message_id,
+        text=stock_start(update, 2),
+        reply_markup=reply_markup,
+    )
     return SHOW_SMY
 
 
@@ -134,7 +181,7 @@ def add_dir(update, context):
 def add_market(update, context):
     new_txn_record['direction'] = update.callback_query.data
     lst_button = list()
-    lst_mkt = ['HK', 'US', 'CRYPTO']
+    lst_mkt = ['HK', 'US']
 
     for market in lst_mkt:
         lst_button.append(
@@ -155,16 +202,37 @@ def add_market(update, context):
 def add_stock_code(update, context):
     new_txn_record['market'] = update.callback_query.data
 
+    if new_txn_record['direction'] == 'BUY':
+        reply_markup = None
+    else:
+        lst_button = list()
+
+        for i in lst_holding[0]:
+            if i['market'] == update.callback_query.data:
+                lst_button.append(
+                    InlineKeyboardButton(
+                        i['code'],
+                        callback_data=str(i['code']),
+                    ),
+                )
+
+        reply_markup = InlineKeyboardMarkup(build_menu(lst_button, n_cols=4))
+
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text='Okay! Tell me the stock code',
+        reply_markup=reply_markup,
     )
 
     return ADD_CODE
 
 
 def add_stock_price(update, context):
-    new_txn_record['code'] = update.message.text.upper()
+
+    if new_txn_record['direction'] == 'BUY':
+        new_txn_record['code'] = update.message.text.upper()
+    else:
+        new_txn_record['code'] = update.callback_query.data
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -178,13 +246,26 @@ def add_stock_lot(update, context):
     if new_txn_record['direction'] == 'BUY':
         new_txn_record['buy_price'] = Decimal(update.message.text)
         new_txn_record['sold_price'] = None
+        reply_markup = None
     else:
         new_txn_record['buy_price'] = None
         new_txn_record['sold_price'] = Decimal(update.message.text)
+        avail_sell = [
+            float(stock['available_sell'])
+            for stock in lst_holding[0]
+            if stock['code'] == new_txn_record['code']
+        ]
+        reply_markup = InlineKeyboardMarkup(
+            build_menu(
+                [InlineKeyboardButton(f'Clear (Total: {avail_sell})', callback_data=str(avail_sell[0]))],
+                n_cols=1,
+            ),
+        )
 
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text='And quantity?',
+        text='And quantity? Enter number or click Clear button',
+        reply_markup=reply_markup
     )
 
     return ADD_LOT
@@ -196,10 +277,13 @@ def add_stock_broker(update, context):
         new_txn_record['sold_lot'] = None
     else:
         new_txn_record['buy_lot'] = None
-        new_txn_record['sold_lot'] = Decimal(update.message.text)
+        try:
+            new_txn_record['sold_lot'] = Decimal(update.message.text)
+        except AttributeError:
+            new_txn_record['sold_lot'] = Decimal(update.callback_query.data)
 
     lst_button = list()
-    lst_broker = ['FUTU', 'BOC', 'CITI', 'TD', 'IB', 'WIREX']
+    lst_broker = ['FUTU', 'BOC', 'CITI', 'TD', 'BINANCE', 'WIREX']
 
     for broker in lst_broker:
         lst_button.append(
@@ -332,7 +416,7 @@ def quote_price(code_list: list) -> dict:
 
     headers = {
         'x-rapidapi-key': os.environ['rapidapikey'],
-        'x-rapidapi-host':  os.environ['rapidapihost'],
+        'x-rapidapi-host': os.environ['rapidapihost'],
     }
 
     response = requests.request("GET", url, headers=headers, params=querystring)

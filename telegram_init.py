@@ -15,15 +15,14 @@ from py_func.counter import \
 from py_func.crypto_fx import ask_from_curr, ask_to_curr, return_rate, \
     FX_FROM, FX_RATE, FX_TO
 from py_func.stock import \
-    stock_start, add_dir, add_market, \
+    stock_summary_init, add_dir, add_market, \
     add_stock_code, add_stock_price, \
     add_stock_lot, add_stock_broker, add_done, \
     remove_code_select, remove_txn_select, remove_txn_done, \
     SHOW_SMY, ADD_DIR, ADD_MKT, \
     ADD_CODE, ADD_PRICE, ADD_LOT, \
     ADD_BRK, ADD_DONE, \
-    REMOVE_CODE, REMOVE_TXN, REMOVE_DONE
-
+    REMOVE_CODE, REMOVE_TXN, REMOVE_DONE, stock_summary_update
 
 # Bot Credential
 updater = Updater(os.environ['botkey'], use_context=True)
@@ -76,17 +75,18 @@ if __name__ == '__main__':
 
     # Define /stock handler workflow
     stock_handler = ConversationHandler(
-        entry_points=[CommandHandler('stock', stock_start)],
+        entry_points=[CommandHandler('stock', stock_summary_init)],
         states={
             SHOW_SMY: [
                 CommandHandler('trade', add_dir),
                 CommandHandler('remove', remove_code_select),
-                CommandHandler('stock', stock_start),
+                CallbackQueryHandler(stock_summary_update),
             ],
             ADD_DIR: [CallbackQueryHandler(add_market)],
             ADD_MKT: [CallbackQueryHandler(add_stock_code)],
             ADD_CODE: [
                 MessageHandler(Filters.regex('\w+'), add_stock_price),
+                CallbackQueryHandler(add_stock_price),
             ],
             ADD_PRICE: [
                 MessageHandler(
@@ -96,17 +96,18 @@ if __name__ == '__main__':
             ],
             ADD_LOT: [
                 MessageHandler(Filters.regex('^[1-9]\d*$'), add_stock_broker),
+                CallbackQueryHandler(add_stock_broker),
             ],
             ADD_BRK: [CallbackQueryHandler(add_done)],
             ADD_DONE: [
                 CommandHandler('trade', add_dir),
-                CommandHandler('stock', stock_start),
+                CommandHandler('stock', stock_summary_init),
             ],
             REMOVE_CODE: [CallbackQueryHandler(remove_txn_select)],
             REMOVE_TXN: [CallbackQueryHandler(remove_txn_done)],
             REMOVE_DONE: [
                 CommandHandler('remove', remove_code_select),
-                CommandHandler('stock', stock_start),
+                CommandHandler('stock', stock_summary_init),
             ]
         },
         fallbacks=[CommandHandler('end', conv_end)],
